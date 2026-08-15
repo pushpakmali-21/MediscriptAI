@@ -1,0 +1,117 @@
+# ==========================================
+# MediScript-AI — Docker Compose (Development)
+# Brings up: vision · extraction · rag · postgres · redis
+# Usage: docker compose up --build
+# ==========================================
+
+version: "3.9"
+
+services:
+
+  # ── Infrastructure ────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: mediscript_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mediscript}
+      POSTGRES_USER: ${POSTGRES_USER:-mediscript}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mediscript_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mediscript} -d ${POSTGRES_DB:-mediscript}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: mediscript_redis
+    restart: unless-stopped
+    command: redis-server --save "" --appendonly no  # In-memory only for dev
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ── Microservices ─────────────────────────────────────────────
+  vision:
+    build:
+      context: .
+      dockerfile: services/vision/Dockerfile
+    container_name: mediscript_vision
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      PYTHONPATH: /app
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mediscript}:${POSTGRES_PASSWORD:-mediscript_dev}@postgres:5432/${POSTGRES_DB:-mediscript}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+  extraction:
+    build:
+      context: .
+      dockerfile: services/extraction/Dockerfile
+    container_name: mediscript_extraction
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      PYTHONPATH: /app
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mediscript}:${POSTGRES_PASSWORD:-mediscript_dev}@postgres:5432/${POSTGRES_DB:-mediscript}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+  rag:
+    build:
+      context: .
+      dockerfile: services/rag/Dockerfile
+    container_name: mediscript_rag
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      PYTHONPATH: /app
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mediscript}:${POSTGRES_PASSWORD:-mediscript_dev}@postgres:5432/${POSTGRES_DB:-mediscript}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+volumes:
+  postgres_data:
