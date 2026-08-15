@@ -3,7 +3,8 @@ MediScript-AI Vision & OCR Microservice.
 Responsible for Image Preprocessing and Text Transcription into the RawPrescriptionText schema.
 """
 
-from fastapi import FastAPI, UploadFile, File, status
+from fastapi import FastAPI, File, UploadFile, status
+
 from schemas.raw_text import RawPrescriptionText
 
 app = FastAPI(
@@ -18,8 +19,10 @@ async def health_check():
     return {"service": "vision", "status": "healthy", "version": "0.1.0"}
 
 
-@app.post("/extract-text", response_model=RawPrescriptionText, status_code=status.HTTP_200_OK)
-async def extract_text(file: UploadFile = File(...)):
+@app.post(
+    "/extract-text", response_model=RawPrescriptionText, status_code=status.HTTP_200_OK
+)
+async def extract_text(file: UploadFile = File(...)):  # noqa: B008
     """Stub endpoint: Extract raw text and layout regions from prescription image."""
     return RawPrescriptionText(
         document_id=f"doc-stub-{file.filename}",
@@ -33,4 +36,5 @@ async def extract_text(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8001)

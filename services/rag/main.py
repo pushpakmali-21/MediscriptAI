@@ -4,6 +4,7 @@ Responsible for grounded medical QA, context retrieval, and three-tier safety cl
 """
 
 from fastapi import FastAPI, status
+
 from schemas.rag import RAGQueryRequest, RAGQueryResponse, SafetyTier
 
 app = FastAPI(
@@ -33,4 +34,5 @@ async def query_knowledge(req: RAGQueryRequest):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8003)

@@ -48,7 +48,7 @@ jobs:
           cache: "pip"
 
       - name: Install test dependencies
-        run: pip install fastapi pydantic uvicorn pytest pytest-asyncio httpx
+        run: pip install fastapi pydantic eval_type_backport uvicorn pytest pytest-asyncio httpx python-multipart
 
       - name: Run schema tests
         run: python -m pytest tests/test_schemas.py tests/test_service_stubs.py -v --tb=short

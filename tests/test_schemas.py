@@ -4,33 +4,29 @@ Validates serialization, deserialization, and schema integrity against sample pr
 """
 
 import pytest
-from datetime import datetime
 from pydantic import ValidationError
 
-from schemas.raw_text import (
-    RawPrescriptionText,
-    DocumentLayoutType,
-    DetectedLanguage,
-    ExtractedRegion,
-    TextRegionType,
-    BoundingBox,
-)
 from schemas.prescription import (
-    StructuredPrescription,
-    MedicationItem,
-    MedicationForm,
-    MedicationRoute,
-    NormalizedDosageTiming,
     DiagnosisItem,
     LabVitalItem,
-    SafetyWarning,
+    MedicationForm,
+    MedicationItem,
+    MedicationRoute,
+    NormalizedDosageTiming,
     SafetySeverity,
+    SafetyWarning,
+    StructuredPrescription,
 )
 from schemas.rag import (
-    RAGQueryRequest,
     RAGQueryResponse,
     RetrievedContextChunk,
     SafetyTier,
+)
+from schemas.raw_text import (
+    DetectedLanguage,
+    DocumentLayoutType,
+    RawPrescriptionText,
+    TextRegionType,
 )
 
 
@@ -51,7 +47,12 @@ def test_raw_prescription_text_valid_pad():
                 "confidence": 0.99,
                 "is_handwritten": False,
                 "has_strikethrough": False,
-                "bounding_box": {"x_min": 0.05, "y_min": 0.02, "x_max": 0.95, "y_max": 0.15},
+                "bounding_box": {
+                    "x_min": 0.05,
+                    "y_min": 0.02,
+                    "x_max": 0.95,
+                    "y_max": 0.15,
+                },
             },
             {
                 "region_id": "reg-02",
