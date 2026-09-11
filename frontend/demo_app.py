@@ -79,9 +79,7 @@ if uploaded_file is not None:
                         st.write(response.text)
                 except requests.exceptions.ConnectionError:
                     st.error("Could not connect to the backend API. Is it running on port 8000?")
-                except requests.exceptions.RequestException as e:
-                    st.error(f"Request error occurred: {e}")
                 except json.JSONDecodeError as e:
                     st.error(f"Invalid response format: {e}")
-                except Exception as e:
-                    st.error(f"An unexpected error occurred: {e}")
+                except requests.exceptions.RequestException as e:
+                    st.error(f"Request error: {e}")
