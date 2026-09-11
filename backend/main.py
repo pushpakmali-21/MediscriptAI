@@ -134,10 +134,12 @@ async def extract_prescription(file: UploadFile = File(...)):
         data["source"] = "gemini"
         return data
         
-    except Exception as e:
+    except (json.JSONDecodeError, ValueError, TypeError, AttributeError) as e:
         print(f"Error calling Gemini API: {e}")
-        # Fallback in case of error
         return JSONResponse(status_code=500, content={"error": str(e), "status": "failed"})
+    except Exception as e:
+        print(f"Unexpected error calling Gemini API: {e}")
+        return JSONResponse(status_code=500, content={"error": "Internal server error", "status": "failed"})
 
 if __name__ == "__main__":
     import uvicorn
