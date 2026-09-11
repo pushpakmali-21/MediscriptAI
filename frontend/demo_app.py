@@ -1,8 +1,8 @@
-import streamlit as st
-import requests
 import json
+
+import requests
+import streamlit as st
 from PIL import Image
-import io
 
 st.set_page_config(page_title="MediScript-AI Prototype", layout="wide")
 

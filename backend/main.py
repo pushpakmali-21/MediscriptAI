@@ -2,16 +2,13 @@
 MediScript-AI Central Backend & Orchestration API.
 Coordinates user requests across Vision, Extraction, and RAG microservices.
 """
-import base64
 import json
 import os
-import uuid
-from typing import Any, Dict, List
 
-from fastapi import FastAPI, status, File, UploadFile
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -60,7 +57,7 @@ MOCK_RAG_DB = {
 
 
 @app.post("/api/v1/extract", status_code=status.HTTP_200_OK)
-async def extract_prescription(file: UploadFile = File(...)):
+async def extract_prescription(file: UploadFile = File(...)):  # noqa: B008
     # Read image
     image_bytes = await file.read()
     
@@ -115,10 +112,8 @@ async def extract_prescription(file: UploadFile = File(...)):
         response = model.generate_content([image_part, prompt])
         response_text = response.text.strip()
         
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
+        response_text = response_text.removeprefix("```json")
+        response_text = response_text.removesuffix("```")
             
         data = json.loads(response_text.strip())
         
@@ -137,7 +132,7 @@ async def extract_prescription(file: UploadFile = File(...)):
     except (json.JSONDecodeError, ValueError, TypeError, AttributeError) as e:
         print(f"Error processing Gemini response: {e}")
         return JSONResponse(status_code=500, content={"error": str(e), "status": "failed"})
-    except google.generativeai.APIError as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Gemini API error: {e}")
         return JSONResponse(status_code=500, content={"error": "API error", "status": "failed"})
 
