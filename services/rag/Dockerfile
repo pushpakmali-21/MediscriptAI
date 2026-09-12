@@ -4,9 +4,8 @@
 # ==========================================
 FROM python:3.11-slim AS base
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# No system-level build deps needed — all rag dependencies ship as pre-built wheels
+RUN apt-get update && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
