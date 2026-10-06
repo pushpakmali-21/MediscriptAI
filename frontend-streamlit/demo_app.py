@@ -2,6 +2,12 @@ import json
 
 import requests
 import streamlit as st
+from pdf2image import convert_from_bytes
+from pdf2image.exceptions import (
+    PDFInfoNotInstalledError,
+    PDFPageCountError,
+    PDFPopplerTimeoutError,
+)
 from PIL import Image
 
 st.set_page_config(page_title="MediScript-AI Prototype", layout="wide")
@@ -20,9 +26,25 @@ if uploaded_file is not None:
 
     with col1:
         st.write("### Original Prescription")
-        # Display the uploaded image
-        image = Image.open(uploaded_file)
-        st.image(image, use_container_width=True)
+        try:
+            if uploaded_file.name.lower().endswith(".pdf"):
+                pages = convert_from_bytes(
+                    uploaded_file.getvalue(), first_page=1, last_page=1
+                )
+                if not pages:
+                    st.error("The uploaded PDF does not contain any pages.")
+                else:
+                    st.image(pages[0], use_container_width=True)
+            else:
+                image = Image.open(uploaded_file)
+                st.image(image, use_container_width=True)
+        except (
+            OSError,
+            PDFInfoNotInstalledError,
+            PDFPageCountError,
+            PDFPopplerTimeoutError,
+        ) as e:
+            st.error(f"Could not display the uploaded prescription: {e}")
 
     with col2:
         st.write("### Extracted Clinical Data")
