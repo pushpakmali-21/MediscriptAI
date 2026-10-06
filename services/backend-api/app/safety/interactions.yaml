@@ -1,0 +1,24 @@
+# Curated list of high-risk drug interactions
+interactions:
+  - drug1: "Paracetamol"
+    drug2: "Alcohol"
+    severity: "high"
+    message: "Concurrent use of paracetamol and alcohol increases the risk of severe liver damage."
+  
+  - drug1: "Sildenafil"
+    drug2: "Nitroglycerin"
+    severity: "high"
+    message: "Using these together can cause a dangerous drop in blood pressure."
+
+  - drug1: "Warfarin"
+    drug2: "Ibuprofen"
+    severity: "high"
+    message: "Taking NSAIDs with warfarin significantly increases the risk of bleeding."
+
+allergies_cross_reactivity:
+  - class: "penicillins"
+    drugs: ["amoxicillin", "ampicillin", "penicillin"]
+    cross_reacts_with: ["cephalosporins"]
+  - class: "cephalosporins"
+    drugs: ["ceftriaxone", "cephalexin", "cefuroxime"]
+    cross_reacts_with: ["penicillins"]
