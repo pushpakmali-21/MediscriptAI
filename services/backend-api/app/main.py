@@ -13,7 +13,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
 try:
     import google.generativeai as genai
@@ -108,7 +108,8 @@ async def extract_prescription(file: UploadFile = File(...)):  # noqa: B008
         prompt = (
             "You are a medical data extraction AI. Read this prescription or clinical notes image. "
             "Extract the following information into a JSON object:\n"
-            "1. 'medications': an array of objects with keys `medicine_name`, `dosage`, `frequency`, `duration`, and `instructions`.\n"
+            "1. 'medications': an array of objects with keys `medicine_name`, `dosage`, `frequency` (e.g., '1-0-1', '0-0-1'), `duration`, `instructions`, and `confidence`.\n"
+            "   - `confidence`: a float between 0.0 and 1.0 indicating your confidence in the extraction of this medication.\n"
             "2. 'diagnoses': an array of strings representing any conditions, symptoms, or diagnoses mentioned.\n"
             "3. 'general_notes': a string containing any other clinical findings, physical exam details, or general notes.\n"
             'Return ONLY valid JSON in the format: { "medications": [], "diagnoses": [], "general_notes": "" }. '
@@ -138,6 +139,12 @@ async def extract_prescription(file: UploadFile = File(...)):  # noqa: B008
                     val = m.get(k)
                     if val is not None:
                         sanitized_m[k] = str(val)
+                conf = m.get("confidence")
+                if conf is not None:
+                    try:
+                        sanitized_m["confidence"] = float(conf)
+                    except ValueError:
+                        pass
                 sanitized_meds.append(sanitized_m)
         data["medications"] = sanitized_meds
 

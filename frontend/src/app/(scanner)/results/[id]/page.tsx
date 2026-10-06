@@ -128,7 +128,7 @@ export default function ResultsPage() {
             ) : (
               <div className="space-y-4">
                 {extraction.medications.map((medication, index) => (
-                  <ExtractedRow
+                    <ExtractedRow
                     key={`${medication.medicine_name ?? "medication"}-${index}`}
                     medicineName={medication.medicine_name || "Unknown"}
                     dosage={medication.dosage || "N/A"}
@@ -136,6 +136,7 @@ export default function ResultsPage() {
                     duration={medication.duration || "N/A"}
                     instructions={medication.instructions || "No specific instructions"}
                     confidence={(medication as any).confidence}
+                    ragContext={(medication as any).rag_context}
                   />
                 ))}
               </div>

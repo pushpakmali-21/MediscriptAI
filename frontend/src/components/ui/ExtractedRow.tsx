@@ -10,6 +10,7 @@ export interface ExtractedRowProps {
   duration: string;
   confidence?: number;
   instructions?: string;
+  ragContext?: string;
   className?: string;
   isDemo?: boolean;
 }
@@ -21,6 +22,7 @@ export const ExtractedRow: React.FC<ExtractedRowProps> = ({
   duration,
   confidence,
   instructions,
+  ragContext,
   className,
   isDemo
 }) => {
@@ -57,8 +59,14 @@ export const ExtractedRow: React.FC<ExtractedRowProps> = ({
         
         {instructions && (
           <div className="text-sm text-[var(--color-ink-light)] font-body mt-1">
-            <span className="font-medium mr-1">Instructions:</span> 
+            <span className="font-medium mr-1 text-ink">Instructions:</span> 
             {instructions}
+          </div>
+        )}
+        
+        {ragContext && (
+          <div className="mt-1 p-3 rounded-md bg-[var(--color-brand-light)] text-brand-dark text-sm border border-brand/10">
+            {ragContext.split('**').map((part, i) => i % 2 === 1 ? <strong key={i} className="font-semibold text-brand">{part}</strong> : part)}
           </div>
         )}
       </div>
