@@ -120,39 +120,83 @@ async def extract_prescription(file: UploadFile = File(...), profile: str = Form
                 detail=f"Extraction service failed: {str(e)}"
             )
 
-        # 3. RAG and 4. Safety (to be implemented in phase 3)
-        # For now, graceful degradation
-        pipeline_status["rag"] = "degraded" 
-        pipeline_status["safety"] = "degraded"
-        
-        # Add required response fields
-        medications = extraction_data.get("medications", [])
-        
-        # Transform extracted med into expected format (for contract compatibility + new fields)
-        formatted_meds = []
-        for m in medications:
-            med_formatted = {
-                "medicine_name": m.get("name_normalized") or m.get("name_raw"),
-                "generic_name": m.get("generic_name"),
-                "dosage": m.get("dosage", {}).get("raw", ""),
-                "dosage_parsed": m.get("dosage"),
-                "frequency": m.get("dosage", {}).get("raw", ""), 
-                "duration": str(m.get("dosage", {}).get("duration_days", "")),
-                "instructions": "",
-                "confidence": m.get("confidence", 0.0),
-                "needs_review": m.get("needs_review", False),
-                "rag_context": "" # To be filled in Phase 3
-            }
-            formatted_meds.append(med_formatted)
+        # 3. RAG and 4. Safety
+        try:
+            from app.safety.classifier import process_safety, UserProfile
+            
+            # Parse user profile if provided
+            user_profile = UserProfile()
+            if profile:
+                try:
+                    profile_data = json.loads(profile)
+                    user_profile = UserProfile(**profile_data)
+                except Exception as e:
+                    print(f"Error parsing profile: {e}")
 
-        return {
-            "medications": formatted_meds,
-            "diagnoses": extraction_data.get("diagnoses", []),
-            "general_notes": extraction_data.get("general_notes", ""),
-            "pipeline_status": pipeline_status,
-            "status": "success",
-            "source": "pipeline"
-        }
+            medications = extraction_data.get("medications", [])
+            
+            # Transform extracted med into expected format
+            formatted_meds = []
+            for m in medications:
+                med_formatted = {
+                    "medicine_name": m.get("name_normalized") or m.get("name_raw"),
+                    "generic_name": m.get("generic_name"),
+                    "dosage": m.get("dosage", {}).get("raw", ""),
+                    "dosage_parsed": m.get("dosage"),
+                    "frequency": m.get("dosage", {}).get("raw", ""), 
+                    "duration": str(m.get("dosage", {}).get("duration_days", "")),
+                    "instructions": "",
+                    "confidence": m.get("confidence", 0.0),
+                    "needs_review": m.get("needs_review", False),
+                    "rag_context": ""
+                }
+                formatted_meds.append(med_formatted)
+                
+            # Process safety checks
+            enriched_meds = await process_safety(client, formatted_meds, user_profile)
+            
+            pipeline_status["rag"] = "ok"
+            pipeline_status["safety"] = "ok"
+            
+            return {
+                "medications": enriched_meds,
+                "diagnoses": extraction_data.get("diagnoses", []),
+                "general_notes": extraction_data.get("general_notes", ""),
+                "pipeline_status": pipeline_status,
+                "status": "success",
+                "source": "pipeline"
+            }
+        except Exception as e:
+            print(f"RAG/Safety failure: {e}")
+            pipeline_status["rag"] = "degraded" 
+            pipeline_status["safety"] = "degraded"
+            
+            # Fallback to simple formatting if safety fails
+            medications = extraction_data.get("medications", [])
+            formatted_meds = []
+            for m in medications:
+                med_formatted = {
+                    "medicine_name": m.get("name_normalized") or m.get("name_raw"),
+                    "generic_name": m.get("generic_name"),
+                    "dosage": m.get("dosage", {}).get("raw", ""),
+                    "dosage_parsed": m.get("dosage"),
+                    "frequency": m.get("dosage", {}).get("raw", ""), 
+                    "duration": str(m.get("dosage", {}).get("duration_days", "")),
+                    "instructions": "",
+                    "confidence": m.get("confidence", 0.0),
+                    "needs_review": m.get("needs_review", False),
+                    "rag_context": ""
+                }
+                formatted_meds.append(med_formatted)
+                
+            return {
+                "medications": formatted_meds,
+                "diagnoses": extraction_data.get("diagnoses", []),
+                "general_notes": extraction_data.get("general_notes", ""),
+                "pipeline_status": pipeline_status,
+                "status": "success",
+                "source": "pipeline"
+            }
 
 async def _extract_legacy_gemini(content_type: str, image_bytes: bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
