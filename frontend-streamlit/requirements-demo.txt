@@ -1,5 +1,0 @@
-streamlit
-requests
-pillow
-# PDF previews also require Poppler's pdftoppm/pdfinfo utilities on PATH.
-pdf2image
