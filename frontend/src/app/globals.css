@@ -1,50 +1,223 @@
 @import "tailwindcss";
 
+/* ============================================
+   MediScript AI — Design Tokens
+   "The prescription is the interface."
+   
+   Paper-warm palette, ink-toned borders,
+   clinical precision without sterility.
+   ============================================ */
+
 @theme {
-  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  /* Fonts — loaded via next/font in layout.tsx */
+  --font-display: var(--font-fraunces), "Georgia", serif;
+  --font-body: var(--font-inter-tight), "Helvetica Neue", sans-serif;
+  --font-mono: var(--font-jetbrains-mono), "Menlo", monospace;
+  --font-handwriting: var(--font-caveat), cursive;
+
+  /* Override default sans to our body font */
+  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand Colors */
+  --color-paper: #faf8f5;
+  --color-paper-warm: #f5f0ea;
+  --color-ink: #1a1a1a;
+  --color-ink-light: #4a4a4a;
+  --color-ink-muted: #8a8a8a;
+  --color-brand: #1a4a6e;
+  --color-brand-dark: #0f3350;
+  --color-brand-light: #e8f0f7;
+  --color-signal: #c2410c;
+  --color-signal-dark: #9a3412;
+  --color-signal-light: #fff7ed;
+  --color-border: #d4cfc8;
+  --color-border-light: #e8e4de;
+  --color-success: #166534;
+  --color-success-light: #f0fdf4;
+
+  /* Spacing scale */
+  --space-section: 6rem;
+  --space-section-sm: 4rem;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 }
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Focus-visible ring — ink-blue, tasteful, visible */
+  *:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Selection highlight */
+  ::selection {
+    background-color: var(--color-brand-light);
+    color: var(--color-brand-dark);
   }
 }
 
-.glass-panel {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+@layer components {
+  /* Ruled-line texture for prescription pad surfaces */
+  .ruled-lines {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 31px,
+      var(--color-border-light) 31px,
+      var(--color-border-light) 32px
+    );
+  }
+
+  /* Paper grain texture — subtle noise */
+  .paper-grain {
+    position: relative;
+  }
+  .paper-grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* Prescription-style divider */
+  .rx-divider {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--color-border) 15%,
+      var(--color-border) 85%,
+      transparent
+    );
+  }
+
+  /* Hero decode animation */
+  @keyframes decode-in {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+      filter: blur(4px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+  }
+
+  .animate-decode {
+    animation: decode-in 0.6s ease-out both;
+  }
+
+  .animate-decode-1 { animation-delay: 0.3s; }
+  .animate-decode-2 { animation-delay: 0.6s; }
+  .animate-decode-3 { animation-delay: 0.9s; }
+  .animate-decode-4 { animation-delay: 1.2s; }
+
+  /* Handwriting wobble — slight rotation for scrawled note feel */
+  .handwriting-tilt {
+    transform: rotate(-1.5deg);
+  }
 }
 
-.text-gradient {
-  background: linear-gradient(to right, #3b82f6, #8b5cf6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
 
-@keyframes blob {
-  0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
-  100% { transform: translate(0px, 0px) scale(1); }
-}
+  .font-body {
+    font-family: var(--font-body);
+  }
 
-.animate-blob {
-  animation: blob 7s infinite;
-}
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-.animation-delay-4000 {
-  animation-delay: 4s;
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .font-handwriting {
+    font-family: var(--font-handwriting);
+  }
+
+  .text-ink {
+    color: var(--color-ink);
+  }
+
+  .text-ink-light {
+    color: var(--color-ink-light);
+  }
+
+  .text-ink-muted {
+    color: var(--color-ink-muted);
+  }
+
+  .text-brand {
+    color: var(--color-brand);
+  }
+
+  .text-signal {
+    color: var(--color-signal);
+  }
+
+  .bg-paper {
+    background-color: var(--color-paper);
+  }
+
+  .bg-paper-warm {
+    background-color: var(--color-paper-warm);
+  }
+
+  .bg-brand {
+    background-color: var(--color-brand);
+  }
+
+  .bg-brand-light {
+    background-color: var(--color-brand-light);
+  }
+
+  .bg-signal-light {
+    background-color: var(--color-signal-light);
+  }
+
+  .border-ink {
+    border-color: var(--color-border);
+  }
+
+  .border-ink-light {
+    border-color: var(--color-border-light);
+  }
 }
