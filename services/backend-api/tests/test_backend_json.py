@@ -3,8 +3,8 @@ from io import BytesIO
 import pytest
 from fastapi import HTTPException, UploadFile
 
-from backend import main
-from backend.main import _parse_gemini_json
+from app import main
+from app.main import _parse_gemini_json
 
 
 @pytest.mark.parametrize(

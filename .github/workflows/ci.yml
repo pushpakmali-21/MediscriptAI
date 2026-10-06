@@ -51,7 +51,7 @@ jobs:
         run: pip install fastapi pydantic eval_type_backport uvicorn pytest pytest-asyncio httpx python-multipart python-dotenv
 
       - name: Run schema tests
-        run: python -m pytest tests/test_schemas.py tests/test_service_stubs.py -v --tb=short
+        run: PYTHONPATH=".:services/backend-api:services/vision-ocr:services/entity-extraction:services/rag-service" python -m pytest schemas/tests/ services/backend-api/tests/ -v --tb=short
 
   # ── Job 3: Docker Build Smoke Test ────────────────────────────
   docker-build:
@@ -61,15 +61,15 @@ jobs:
       fail-fast: false
       matrix:
         service:
-          - name: vision
-            dockerfile: services/vision/Dockerfile
-            requirements: requirements-vision.txt
-          - name: extraction
-            dockerfile: services/extraction/Dockerfile
-            requirements: requirements-extraction.txt
-          - name: rag
-            dockerfile: services/rag/Dockerfile
-            requirements: requirements-rag.txt
+          - name: vision-ocr
+            dockerfile: services/vision-ocr/Dockerfile
+            requirements: services/vision-ocr/requirements.txt
+          - name: entity-extraction
+            dockerfile: services/entity-extraction/Dockerfile
+            requirements: services/entity-extraction/requirements.txt
+          - name: rag-service
+            dockerfile: services/rag-service/Dockerfile
+            requirements: services/rag-service/requirements.txt
     steps:
       - uses: actions/checkout@v4
 
