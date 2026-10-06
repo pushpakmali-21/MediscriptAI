@@ -44,7 +44,7 @@ services:
   vision:
     build:
       context: .
-      dockerfile: services/vision-ocr/Dockerfile
+      dockerfile: services/vision/Dockerfile
     container_name: mediscript_vision
     restart: unless-stopped
     ports:
@@ -68,7 +68,7 @@ services:
   extraction:
     build:
       context: .
-      dockerfile: services/entity-extraction/Dockerfile
+      dockerfile: services/extraction/Dockerfile
     container_name: mediscript_extraction
     restart: unless-stopped
     ports:
@@ -92,7 +92,7 @@ services:
   rag:
     build:
       context: .
-      dockerfile: services/rag-service/Dockerfile
+      dockerfile: services/rag/Dockerfile
     container_name: mediscript_rag
     restart: unless-stopped
     ports:
