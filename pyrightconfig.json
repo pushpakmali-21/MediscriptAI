@@ -1,5 +1,23 @@
 {
   "pythonVersion": "3.11",
   "venvPath": ".",
-  "venv": ".venv"
+  "venv": ".venv",
+  "executionEnvironments": [
+    {
+      "root": "services/backend-api",
+      "extraPaths": ["services/backend-api"]
+    },
+    {
+      "root": "services/extraction",
+      "extraPaths": ["services/extraction"]
+    },
+    {
+      "root": "services/rag",
+      "extraPaths": ["services/rag"]
+    },
+    {
+      "root": "services/vision",
+      "extraPaths": ["services/vision"]
+    }
+  ]
 }

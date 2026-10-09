@@ -92,5 +92,7 @@ async def test_extract_prescription_sends_uploaded_image_to_gemini(monkeypatch):
         "mime_type": "image/png",
         "data": b"uploaded image bytes",
     }
-    assert result["source"] == "gemini"
-    assert result["medications"][0]["medicine_name"] == "TestMed"
+    import json
+    body = json.loads(result.body)
+    assert body["source"] == "gemini"
+    assert body["medications"][0]["medicine_name"] == "TestMed"

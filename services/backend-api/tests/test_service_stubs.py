@@ -24,9 +24,9 @@ def load_app(module_name: str, file_path: str):
     return module.app
 
 backend_app = load_app("backend_main", "services/backend-api/app/main.py")
-vision_app = load_app("vision_main", "services/vision-ocr/app/main.py")
-extraction_app = load_app("extraction_main", "services/entity-extraction/app/main.py")
-rag_app = load_app("rag_main", "services/rag-service/app/main.py")
+vision_app = load_app("vision_main", "services/vision/app/main.py")
+extraction_app = load_app("extraction_main", "services/extraction/app/main.py")
+rag_app = load_app("rag_main", "services/rag/app/main.py")
 
 
 @pytest.mark.asyncio
