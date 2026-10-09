@@ -5,12 +5,19 @@ Integration tests for service stubs and /health endpoints.
 import importlib.util
 import sys
 import pytest
+import pathlib
 from httpx import ASGITransport, AsyncClient
 
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent.parent
+
 def load_app(module_name: str, file_path: str):
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    absolute_path = str(PROJECT_ROOT / file_path)
+    spec = importlib.util.spec_from_file_location(module_name, absolute_path)
+    if spec is None:
+        raise ImportError(f"Could not load module {module_name} from {absolute_path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
+    # pyrefly: ignore [missing-attribute]
     spec.loader.exec_module(module)
     return module.app
 

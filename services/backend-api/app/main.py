@@ -18,7 +18,8 @@ import httpx
 load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
 except ImportError:
     genai = None
 
@@ -141,10 +142,10 @@ async def extract_prescription(file: UploadFile = File(...), profile: str = Form
                 med_formatted = {
                     "medicine_name": m.get("name_normalized") or m.get("name_raw"),
                     "generic_name": m.get("generic_name"),
-                    "dosage": m.get("dosage", {}).get("raw", ""),
+                    "dosage": (m.get("dosage") or {}).get("raw", ""),
                     "dosage_parsed": m.get("dosage"),
-                    "frequency": m.get("dosage", {}).get("raw", ""), 
-                    "duration": str(m.get("dosage", {}).get("duration_days", "")),
+                    "frequency": (m.get("dosage") or {}).get("raw", ""), 
+                    "duration": str((m.get("dosage") or {}).get("duration_days", "")),
                     "instructions": "",
                     "confidence": m.get("confidence", 0.0),
                     "needs_review": m.get("needs_review", False),
@@ -178,10 +179,10 @@ async def extract_prescription(file: UploadFile = File(...), profile: str = Form
                 med_formatted = {
                     "medicine_name": m.get("name_normalized") or m.get("name_raw"),
                     "generic_name": m.get("generic_name"),
-                    "dosage": m.get("dosage", {}).get("raw", ""),
+                    "dosage": (m.get("dosage") or {}).get("raw", ""),
                     "dosage_parsed": m.get("dosage"),
-                    "frequency": m.get("dosage", {}).get("raw", ""), 
-                    "duration": str(m.get("dosage", {}).get("duration_days", "")),
+                    "frequency": (m.get("dosage") or {}).get("raw", ""), 
+                    "duration": str((m.get("dosage") or {}).get("duration_days", "")),
                     "instructions": "",
                     "confidence": m.get("confidence", 0.0),
                     "needs_review": m.get("needs_review", False),
@@ -198,13 +199,13 @@ async def extract_prescription(file: UploadFile = File(...), profile: str = Form
                 "source": "pipeline"
             }
 
-async def _extract_legacy_gemini(content_type: str, image_bytes: bytes):
+async def _extract_legacy_gemini(content_type: str | None, image_bytes: bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
 
     if not api_key:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Gemini API key is not configured.",
+            detail="GEMINI_API_KEY is not configured.",
         )
     if genai is None:
         raise HTTPException(
@@ -213,8 +214,8 @@ async def _extract_legacy_gemini(content_type: str, image_bytes: bytes):
         )
 
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"))
+        client = genai.Client(api_key=api_key)
+        model_name = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
 
         prompt = (
             "You are a medical data extraction AI. Read this prescription or clinical notes image. "
@@ -227,12 +228,20 @@ async def _extract_legacy_gemini(content_type: str, image_bytes: bytes):
             "Do not include markdown code blocks around the JSON."
         )
 
-        image_part = {
-            "mime_type": content_type or "image/jpeg",
-            "data": image_bytes,
-        }
+        image_part = types.Part.from_bytes(
+            data=image_bytes,
+            mime_type=content_type or "image/jpeg",
+        )
 
-        response = model.generate_content([image_part, prompt])
+        response = await client.aio.models.generate_content(
+            model=model_name,
+            contents=[image_part, prompt]
+        )
+        if not response.text:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="No text returned from the model. The request might have been blocked or resulted in an empty response."
+            )
         response_text = response.text.strip()
         data = _parse_gemini_json(response_text)
 
@@ -257,7 +266,6 @@ async def _extract_legacy_gemini(content_type: str, image_bytes: bytes):
                         pass
                 
                 # Mock RAG Context
-                from app.main import MOCK_RAG_DB  # fallback to import if needed
                 
                 sanitized_meds.append(sanitized_m)
         data["medications"] = sanitized_meds
@@ -277,7 +285,7 @@ async def _extract_legacy_gemini(content_type: str, image_bytes: bytes):
         print(f"Gemini API error: {e}")
         return JSONResponse(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            content={"error": "Gemini API request failed.", "status": "failed"},
+            content={"error": f"Gemini API request failed. Details: {str(e)}", "status": "failed"},
         )
 
 
