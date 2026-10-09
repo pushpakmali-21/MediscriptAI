@@ -4,6 +4,8 @@ import pytest
 from app import main
 from app.main import _parse_gemini_json
 from fastapi import HTTPException, UploadFile
+from starlette.datastructures import Headers
+import json
 
 
 @pytest.mark.parametrize(
@@ -79,7 +81,7 @@ async def test_extract_prescription_sends_uploaded_image_to_gemini(monkeypatch):
     upload = UploadFile(
         filename="prescription.png",
         file=BytesIO(b"uploaded image bytes"),
-        headers={"content-type": "image/png"},
+        headers=Headers({"content-type": "image/png"}),
     )
 
     result = await main.extract_prescription(upload)

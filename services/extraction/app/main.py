@@ -1,8 +1,9 @@
 import os
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import spacy
+from spacy.cli.download import download as spacy_download
 from fastapi import FastAPI
 from pydantic import BaseModel
 from rapidfuzz import fuzz, process
@@ -12,8 +13,8 @@ from app.dosage_normalizer import parse_dosage
 app = FastAPI(title="Entity Extraction Service")
 
 # Load brand mapping
-brand_map = {}
-brand_names = []
+brand_map: dict[str, str] = {}
+brand_names: list[str] = []
 try:
     df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'brand_mapping.csv'))
     for _, row in df.iterrows():
@@ -28,7 +29,7 @@ try:
     nlp = spacy.load(os.environ.get("SPACY_MODEL", "en_core_web_sm"))
 except OSError:
     # Fallback to downloading if not present (in a real scenario, should be baked into Docker image)
-    spacy.cli.download("en_core_web_sm")
+    spacy_download("en_core_web_sm")
     nlp = spacy.load("en_core_web_sm")
 
 # Add EntityRuler for basic entities (forms, routes, etc.)
@@ -41,7 +42,7 @@ patterns = [
 for b in brand_names:
     patterns.append({"label": "DRUG", "pattern": [{"LOWER": b}]})
 
-ruler.add_patterns(patterns)
+cast(Any, ruler).add_patterns(patterns)
 
 class OCRLine(BaseModel):
     text: str

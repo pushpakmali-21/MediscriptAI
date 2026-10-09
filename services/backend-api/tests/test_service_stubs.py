@@ -19,7 +19,8 @@ def load_app(module_name: str, file_path: str):
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     # pyrefly: ignore [missing-attribute]
-    spec.loader.exec_module(module)
+    if spec.loader:
+        spec.loader.exec_module(module)
     return module.app
 
 backend_app = load_app("backend_main", "services/backend-api/app/main.py")

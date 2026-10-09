@@ -105,10 +105,14 @@ class QdrantVectorStore(VectorStore):
         try:
             self.client.get_collection(self.collection_name)
         except ValueError:
+            embedding_size = self.model.get_sentence_embedding_dimension()
+            if embedding_size is None:
+                raise ValueError("Embedding dimension could not be determined")
+            
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=self.qmodels.VectorParams(
-                    size=self.model.get_sentence_embedding_dimension(), 
+                    size=embedding_size, 
                     distance=self.qmodels.Distance.COSINE
                 )
             )
@@ -151,18 +155,19 @@ class QdrantVectorStore(VectorStore):
             if must_conditions:
                 qdrant_filters = self.qmodels.Filter(must=must_conditions)
                 
-        results = self.client.search(
+        results = self.client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_emb.tolist(),
+            query=query_emb.tolist(),
             query_filter=qdrant_filters,
             limit=top_k
         )
         
         formatted_results = []
-        for hit in results:
+        for hit in results.points:
+            payload = hit.payload or {}
             formatted_results.append({
-                "text": hit.payload.get("text", ""),
-                "metadata": hit.payload.get("metadata", {}),
+                "text": payload.get("text", ""),
+                "metadata": payload.get("metadata", {}),
                 "score": hit.score
             })
             

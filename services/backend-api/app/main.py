@@ -18,10 +18,11 @@ from fastapi.responses import JSONResponse
 load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
 try:
-    from google import genai
-    from google.genai import types
+    from google import genai  # type: ignore
+    from google.genai import types  # type: ignore
 except ImportError:
     genai = None
+    types = None
 
 app = FastAPI(
     title="MediScript-AI Orchestration API",
@@ -228,7 +229,7 @@ async def _extract_legacy_gemini(content_type: str | None, image_bytes: bytes):
             "Do not include markdown code blocks around the JSON."
         )
 
-        image_part = types.Part.from_bytes(
+        image_part = types.Part.from_bytes(  # type: ignore
             data=image_bytes,
             mime_type=content_type or "image/jpeg",
         )

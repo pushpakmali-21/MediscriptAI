@@ -26,7 +26,7 @@ async def test_guide_tier_allergy():
         async def post(self, *args, **kwargs):
             return None
             
-    alerts = await guide_tier(MockClient(), "Amoxicillin", profile, ["Amoxicillin"])
+    alerts = await guide_tier(MockClient(), "Amoxicillin", profile, ["Amoxicillin"])  # type: ignore
     assert len(alerts) >= 1
     assert alerts[0]["type"] == "allergy"
     assert alerts[0]["severity"] == "high"
@@ -38,7 +38,7 @@ async def test_guide_tier_cross_reactivity():
         async def post(self, *args, **kwargs):
             return None
     
-    alerts = await guide_tier(MockClient(), "Ceftriaxone", profile, ["Ceftriaxone"])
+    alerts = await guide_tier(MockClient(), "Ceftriaxone", profile, ["Ceftriaxone"])  # type: ignore
     # Should catch cephalosporins -> penicillins cross-reactivity
     assert len(alerts) >= 1
     assert alerts[0]["type"] == "allergy"
@@ -50,7 +50,7 @@ async def test_guide_tier_drug_interaction():
         async def post(self, *args, **kwargs):
             return None
             
-    alerts = await guide_tier(MockClient(), "Paracetamol", profile, ["Paracetamol"])
+    alerts = await guide_tier(MockClient(), "Paracetamol", profile, ["Paracetamol"])  # type: ignore
     assert len(alerts) >= 1
     assert alerts[0]["type"] == "drug_drug"
     assert alerts[0]["severity"] == "high"

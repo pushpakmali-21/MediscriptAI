@@ -8,7 +8,7 @@ from app.vector_store import get_vector_store
 
 app = FastAPI(title="RAG Service")
 
-vector_store = None
+vector_store: Any = None
 
 @app.on_event("startup")
 def startup_event():
@@ -46,7 +46,7 @@ def ingest_documents(req: IngestRequest):
 @app.post("/retrieve", response_model=RetrieveResponse)
 def retrieve_documents(req: RetrieveRequest):
     try:
-        results = vector_store.retrieve(req.query, filters=req.filters, top_k=req.top_k)
+        results = vector_store.retrieve(req.query, filters=req.filters, top_k=req.top_k or 5)
         
         # Minimum score threshold
         min_score = float(os.environ.get("MIN_RETRIEVAL_SCORE", "0.3"))

@@ -177,7 +177,7 @@ async def process_safety(client: httpx.AsyncClient, extracted_meds: list[dict[st
     enriched_meds = []
     for med in extracted_meds:
         enriched_med = med.copy()
-        gn = med.get("generic_name") or med.get("medicine_name")
+        gn = str(med.get("generic_name") or med.get("medicine_name") or "")
         
         # 1. Explain
         explain_text = explain_tier(med.get("dosage_parsed", {}))

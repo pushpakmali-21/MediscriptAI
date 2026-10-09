@@ -10,7 +10,7 @@ from app.engine import VisionAPIError, get_ocr_engine
 
 app = FastAPI(title="Vision OCR Service")
 
-ocr_engine = None
+ocr_engine: Any = None
 
 @app.on_event("startup")
 def startup_event():
