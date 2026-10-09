@@ -1,5 +1,6 @@
 import os
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 
@@ -19,27 +20,27 @@ def health_check():
     return {"status": "ok"}
 
 class IngestRequest(BaseModel):
-    chunks: List[Dict[str, Any]]
+    chunks: list[dict[str, Any]]
 
 class RetrieveRequest(BaseModel):
     query: str
-    filters: Optional[Dict[str, Any]] = None
-    top_k: Optional[int] = 5
+    filters: dict[str, Any] | None = None
+    top_k: int | None = 5
 
 class RetrieveResponse(BaseModel):
-    results: List[Dict[str, Any]]
+    results: list[dict[str, Any]]
     status: str
-    reason: Optional[str] = None
+    reason: str | None = None
 
 @app.post("/ingest")
 def ingest_documents(req: IngestRequest):
     try:
         vector_store.ingest(req.chunks)
         return {"status": "success", "ingested_count": len(req.chunks)}
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to ingest: {str(e)}"
+            detail=f"Failed to ingest: {e!s}"
         )
 
 @app.post("/retrieve", response_model=RetrieveResponse)
@@ -62,8 +63,8 @@ def retrieve_documents(req: RetrieveRequest):
             results=filtered_results,
             status="success"
         )
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve: {str(e)}"
+            detail=f"Failed to retrieve: {e!s}"
         )

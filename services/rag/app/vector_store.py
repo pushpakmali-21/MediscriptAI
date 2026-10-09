@@ -1,25 +1,24 @@
 import os
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Tuple
-import numpy as np
+from typing import Any
+
 from sentence_transformers import SentenceTransformer
+
 
 class VectorStore(ABC):
     @abstractmethod
-    def ingest(self, chunks: List[Dict[str, Any]]):
+    def ingest(self, chunks: list[dict[str, Any]]):
         """
         Ingest chunks into the vector store.
         Each chunk should have 'text', 'metadata', and optionally 'id'.
         """
-        pass
 
     @abstractmethod
-    def retrieve(self, query: str, filters: Dict[str, Any] = None, top_k: int = 5) -> List[Dict[str, Any]]:
+    def retrieve(self, query: str, filters: dict[str, Any] | None = None, top_k: int = 5) -> list[dict[str, Any]]:
         """
         Retrieve top_k chunks matching the query.
         Returns list of chunks with 'text', 'metadata', and 'score'.
         """
-        pass
 
 class FaissVectorStore(VectorStore):
     def __init__(self, model_name: str = "all-MiniLM-L6-v2", store_path: str = "./faiss_store"):
@@ -33,7 +32,7 @@ class FaissVectorStore(VectorStore):
         
         # In a real app we'd load existing index from disk if present
 
-    def ingest(self, chunks: List[Dict[str, Any]]):
+    def ingest(self, chunks: list[dict[str, Any]]):
         if not chunks:
             return
             
@@ -50,7 +49,7 @@ class FaissVectorStore(VectorStore):
         self.chunks.extend(chunks)
         # Note: persisting to disk omitted for brevity
 
-    def retrieve(self, query: str, filters: Dict[str, Any] = None, top_k: int = 5) -> List[Dict[str, Any]]:
+    def retrieve(self, query: str, filters: dict[str, Any] | None = None, top_k: int = 5) -> list[dict[str, Any]]:
         if self.index is None or self.index.ntotal == 0:
             return []
             
@@ -105,7 +104,7 @@ class QdrantVectorStore(VectorStore):
         # Initialize collection if not exists
         try:
             self.client.get_collection(self.collection_name)
-        except Exception:
+        except ValueError:
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=self.qmodels.VectorParams(
@@ -114,7 +113,7 @@ class QdrantVectorStore(VectorStore):
                 )
             )
 
-    def ingest(self, chunks: List[Dict[str, Any]]):
+    def ingest(self, chunks: list[dict[str, Any]]):
         if not chunks:
             return
             
@@ -136,7 +135,7 @@ class QdrantVectorStore(VectorStore):
             points=points
         )
 
-    def retrieve(self, query: str, filters: Dict[str, Any] = None, top_k: int = 5) -> List[Dict[str, Any]]:
+    def retrieve(self, query: str, filters: dict[str, Any] | None = None, top_k: int = 5) -> list[dict[str, Any]]:
         query_emb = self.model.encode(query, convert_to_numpy=True)
         
         qdrant_filters = None

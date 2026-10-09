@@ -1,13 +1,14 @@
-import os
+import argparse
 import glob
 import json
+import os
+from typing import Any
+
 import requests
-import argparse
-from typing import List, Dict, Any
 
 API_URL = os.environ.get("API_URL", "http://localhost:8000/api/v1/extract")
 
-def evaluate_prescription(image_path: str, ground_truth: Dict[str, Any]) -> Dict[str, Any]:
+def evaluate_prescription(image_path: str, ground_truth: dict[str, Any]) -> dict[str, Any]:
     with open(image_path, "rb") as f:
         # Mocking profile for eval if needed
         profile = {"allergies": [], "chronic_conditions": [], "current_medications": []}
@@ -18,7 +19,7 @@ def evaluate_prescription(image_path: str, ground_truth: Dict[str, Any]) -> Dict
             resp = requests.post(API_URL, files=files, data=data)
             resp.raise_for_status()
             result = resp.json()
-        except Exception as e:
+        except (requests.RequestException, ValueError) as e:
             print(f"Error calling API for {image_path}: {e}")
             return {"error": str(e)}
 

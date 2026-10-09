@@ -1,14 +1,14 @@
-import os
-import requests
-import json
 import argparse
-from datetime import datetime
-from typing import List, Dict, Any
+import os
+from datetime import datetime, timezone
+from typing import Any
+
+import requests
 
 # Adjust this URL depending on where RAG service is running
 RAG_API_URL = os.environ.get("RAG_API_URL", "http://localhost:8003")
 
-def fetch_openfda_labels(limit: int = 10) -> List[Dict[str, Any]]:
+def fetch_openfda_labels(limit: int = 10) -> list[dict[str, Any]]:
     # OpenFDA drug label endpoint
     url = f"https://api.fda.gov/drug/label.json?search=_exists_:indications_and_usage&limit={limit}"
     response = requests.get(url)
@@ -16,7 +16,7 @@ def fetch_openfda_labels(limit: int = 10) -> List[Dict[str, Any]]:
     data = response.json()
     return data.get("results", [])
 
-def chunk_label(label: Dict[str, Any]) -> List[Dict[str, Any]]:
+def chunk_label(label: dict[str, Any]) -> list[dict[str, Any]]:
     chunks = []
     
     openfda = label.get("openfda", {})
@@ -32,7 +32,7 @@ def chunk_label(label: Dict[str, Any]) -> List[Dict[str, Any]]:
         "adverse_reactions"
     ]
     
-    retrieval_date = datetime.now().isoformat()
+    retrieval_date = datetime.now(timezone.utc).isoformat()
     
     for section in sections:
         if section in label:

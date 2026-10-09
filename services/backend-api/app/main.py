@@ -3,17 +3,17 @@ MediScript-AI Central Backend & Orchestration API.
 Coordinates user requests across Vision, Extraction, and RAG microservices.
 """
 
+import asyncio
 import json
 import os
 import re
-import asyncio
 from pathlib import Path
 
+import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, HTTPException, UploadFile, status, Form
+from fastapi import FastAPI, Form, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import httpx
 
 load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
@@ -62,7 +62,7 @@ def _parse_gemini_json(response_text: str) -> dict:
 
     data = json.loads(json_text.strip())
     if not isinstance(data, dict):
-        raise ValueError("Gemini response must be a JSON object")
+        raise TypeError("Gemini response must be a JSON object")
     return data
 
 async def call_with_retry(client: httpx.AsyncClient, method: str, url: str, retries: int = 2, **kwargs) -> httpx.Response:
@@ -71,7 +71,7 @@ async def call_with_retry(client: httpx.AsyncClient, method: str, url: str, retr
             resp = await client.request(method, url, **kwargs)
             resp.raise_for_status()
             return resp
-        except httpx.HTTPError as e:
+        except httpx.HTTPError:
             if attempt == retries:
                 raise
             await asyncio.sleep(2 ** attempt)  # exponential backoff
@@ -79,7 +79,7 @@ async def call_with_retry(client: httpx.AsyncClient, method: str, url: str, retr
 
 
 @app.post("/api/v1/extract", status_code=status.HTTP_200_OK)
-async def extract_prescription(file: UploadFile = File(...), profile: str = Form(None)):
+async def extract_prescription(file: UploadFile, profile: str = Form(None)):
     use_legacy = os.environ.get("USE_LEGACY_GEMINI", "true").lower() == "true"
     image_bytes = await file.read()
     
@@ -106,7 +106,7 @@ async def extract_prescription(file: UploadFile = File(...), profile: str = Form
             pipeline_status["vision"] = "failed"
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Vision service failed: {str(e)}"
+                detail=f"Vision service failed: {e!s}"
             )
             
         # 2. Extraction
@@ -118,12 +118,12 @@ async def extract_prescription(file: UploadFile = File(...), profile: str = Form
             pipeline_status["extraction"] = "failed"
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Extraction service failed: {str(e)}"
+                detail=f"Extraction service failed: {e!s}"
             )
 
         # 3. RAG and 4. Safety
         try:
-            from app.safety.classifier import process_safety, UserProfile
+            from app.safety.classifier import UserProfile, process_safety
             
             # Parse user profile if provided
             user_profile = UserProfile()
@@ -131,7 +131,7 @@ async def extract_prescription(file: UploadFile = File(...), profile: str = Form
                 try:
                     profile_data = json.loads(profile)
                     user_profile = UserProfile(**profile_data)
-                except Exception as e:
+                except (json.JSONDecodeError, ValueError, TypeError) as e:
                     print(f"Error parsing profile: {e}")
 
             medications = extraction_data.get("medications", [])
@@ -167,7 +167,7 @@ async def extract_prescription(file: UploadFile = File(...), profile: str = Form
                 "status": "success",
                 "source": "pipeline"
             }
-        except Exception as e:
+        except (httpx.RequestError, ValueError, TypeError) as e:
             print(f"RAG/Safety failure: {e}")
             pipeline_status["rag"] = "degraded" 
             pipeline_status["safety"] = "degraded"
@@ -281,11 +281,11 @@ async def _extract_legacy_gemini(content_type: str | None, image_bytes: bytes):
         data["pipeline_status"] = {"vision": "legacy", "extraction": "legacy", "rag": "legacy", "safety": "legacy"}
         return data
 
-    except Exception as e:
+    except (httpx.RequestError, ValueError, TypeError, RuntimeError) as e:
         print(f"Gemini API error: {e}")
         return JSONResponse(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            content={"error": f"Gemini API request failed. Details: {str(e)}", "status": "failed"},
+            content={"error": f"Gemini API request failed. Details: {e!s}", "status": "failed"},
         )
 
 

@@ -1,12 +1,11 @@
 import os
-import csv
-from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, status
-from pydantic import BaseModel
-import spacy
-from spacy.pipeline import EntityRuler
-from rapidfuzz import process, fuzz
+from typing import Any
+
 import pandas as pd
+import spacy
+from fastapi import FastAPI
+from pydantic import BaseModel
+from rapidfuzz import fuzz, process
 
 from app.dosage_normalizer import parse_dosage
 
@@ -21,7 +20,7 @@ try:
         b, g = str(row['brand_name']).strip(), str(row['generic_name']).strip()
         brand_map[b.lower()] = g
         brand_names.append(b.lower())
-except Exception as e:
+except (OSError, pd.errors.ParserError) as e:
     print(f"Warning: Could not load brand mapping: {e}")
 
 # Load spaCy model
@@ -46,28 +45,28 @@ ruler.add_patterns(patterns)
 
 class OCRLine(BaseModel):
     text: str
-    bbox: List[List[float]]
+    bbox: list[list[float]]
     confidence: float
 
 class OCRExtractRequest(BaseModel):
-    lines: List[OCRLine]
+    lines: list[OCRLine]
     overall_confidence: float
 
 class ExtractedMedication(BaseModel):
     name_raw: str
     name_normalized: str
-    generic_name: Optional[str]
-    strength: Optional[str]
-    form: Optional[str]
-    route: Optional[str]
-    dosage: Dict[str, Any]
+    generic_name: str | None
+    strength: str | None
+    form: str | None
+    route: str | None
+    dosage: dict[str, Any]
     confidence: float
-    source_line_bbox: Optional[List[List[float]]]
+    source_line_bbox: list[list[float]] | None
     needs_review: bool
 
 class ExtractionResponse(BaseModel):
-    medications: List[ExtractedMedication]
-    diagnoses: List[str]
+    medications: list[ExtractedMedication]
+    diagnoses: list[str]
     general_notes: str
 
 CONFIDENCE_THRESHOLD = float(os.environ.get("CONFIDENCE_THRESHOLD", "0.6"))
@@ -76,7 +75,7 @@ CONFIDENCE_THRESHOLD = float(os.environ.get("CONFIDENCE_THRESHOLD", "0.6"))
 def health_check():
     return {"status": "ok"}
 
-def map_brand_to_generic(raw_name: str) -> tuple[str, Optional[str]]:
+def map_brand_to_generic(raw_name: str) -> tuple[str, str | None]:
     # Fuzzy match raw_name to brand_names
     best_match = process.extractOne(raw_name.lower(), brand_names, scorer=fuzz.ratio)
     if best_match and best_match[1] >= 80: # 80% similarity threshold

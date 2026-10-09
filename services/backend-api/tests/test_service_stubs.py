@@ -3,9 +3,10 @@ Integration tests for service stubs and /health endpoints.
 """
 
 import importlib.util
-import sys
-import pytest
 import pathlib
+import sys
+
+import pytest
 from httpx import ASGITransport, AsyncClient
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent.parent

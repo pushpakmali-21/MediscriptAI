@@ -1,13 +1,12 @@
-import io
-import os
-import cv2
-import numpy as np
-import fitz  # PyMuPDF
-from fastapi import FastAPI, File, UploadFile, HTTPException, status
-from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import Any
 
-from app.engine import get_ocr_engine
+import cv2
+import fitz  # PyMuPDF
+import numpy as np
+from fastapi import FastAPI, HTTPException, UploadFile, status
+from pydantic import BaseModel
+
+from app.engine import VisionAPIError, get_ocr_engine
 
 app = FastAPI(title="Vision OCR Service")
 
@@ -23,7 +22,7 @@ def health_check():
     return {"status": "ok"}
 
 class OCRResponse(BaseModel):
-    lines: List[Dict[str, Any]]
+    lines: list[dict[str, Any]]
     overall_confidence: float
     status: str
 
@@ -54,7 +53,7 @@ def preprocess_image(image_bytes: bytes) -> bytes:
     return encoded_img.tobytes()
 
 @app.post("/ocr", response_model=OCRResponse)
-async def perform_ocr(file: UploadFile = File(...)):
+async def perform_ocr(file: UploadFile):
     # Validate file type
     if file.content_type not in ["image/jpeg", "image/png", "application/pdf"]:
         raise HTTPException(
@@ -73,18 +72,18 @@ async def perform_ocr(file: UploadFile = File(...)):
             page = doc.load_page(0)  # Just take the first page for now
             pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom
             file_bytes = pix.tobytes("jpg")
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Failed to process PDF: {str(e)}"
+                detail=f"Failed to process PDF: {e!s}"
             )
             
     try:
         processed_bytes = preprocess_image(file_bytes)
-    except Exception as e:
+    except (ValueError, cv2.error) as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Failed to preprocess image: {str(e)}"
+            detail=f"Failed to preprocess image: {e!s}"
         )
 
     try:
@@ -94,8 +93,8 @@ async def perform_ocr(file: UploadFile = File(...)):
             overall_confidence=overall_confidence,
             status="success"
         )
-    except Exception as e:
+    except (ValueError, RuntimeError, VisionAPIError) as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"OCR Engine failed: {str(e)}"
+            detail=f"OCR Engine failed: {e!s}"
         )

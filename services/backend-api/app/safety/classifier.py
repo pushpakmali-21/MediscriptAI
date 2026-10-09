@@ -1,29 +1,31 @@
 import os
-import yaml
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 import httpx
+import yaml
 from pydantic import BaseModel
 
+
 class UserProfile(BaseModel):
-    allergies: List[str] = []
-    chronic_conditions: List[str] = []
-    current_medications: List[str] = []
-    age_band: Optional[str] = None
+    allergies: list[str] = []
+    chronic_conditions: list[str] = []
+    current_medications: list[str] = []
+    age_band: str | None = None
     pregnancy_flag: bool = False
 
 RAG_SERVICE_URL = os.environ.get("RAG_SERVICE_URL", "http://rag:8003")
 
-def load_interactions_db() -> Dict[str, Any]:
+def load_interactions_db() -> dict[str, Any]:
     file_path = os.path.join(os.path.dirname(__file__), "interactions.yaml")
     try:
         with open(file_path, "r") as f:
             return yaml.safe_load(f)
-    except Exception:
+    except (OSError, yaml.YAMLError):
         return {"interactions": [], "allergies_cross_reactivity": []}
 
 INTERACTIONS_DB = load_interactions_db()
 
-async def get_rag_context(client: httpx.AsyncClient, generic_name: str, section: str = None) -> List[Dict[str, Any]]:
+async def get_rag_context(client: httpx.AsyncClient, generic_name: str, section: str | None = None) -> list[dict[str, Any]]:
     filters = {"generic_name": generic_name.lower()}
     if section:
         filters["section"] = section
@@ -36,11 +38,11 @@ async def get_rag_context(client: httpx.AsyncClient, generic_name: str, section:
         )
         if resp.status_code == 200:
             return resp.json().get("results", [])
-    except Exception as e:
+    except httpx.RequestError as e:
         print(f"RAG retrieval error: {e}")
     return []
 
-def explain_tier(dosage: Dict[str, Any]) -> str:
+def explain_tier(dosage: dict[str, Any]) -> str:
     """Tier 1: Explain - Decode shorthand rule-based."""
     if not dosage or not any([dosage.get("morning"), dosage.get("afternoon"), dosage.get("evening"), dosage.get("night")]):
         return ""
@@ -65,7 +67,7 @@ def explain_tier(dosage: Dict[str, Any]) -> str:
         
     return explanation
 
-async def inform_tier(client: httpx.AsyncClient, generic_name: str) -> Dict[str, Any]:
+async def inform_tier(client: httpx.AsyncClient, generic_name: str) -> dict[str, Any]:
     """Tier 2: Inform - Evidence-based info from RAG."""
     if not generic_name:
         return {"text": "", "citations": []}
@@ -83,7 +85,7 @@ async def inform_tier(client: httpx.AsyncClient, generic_name: str) -> Dict[str,
         "citations": list(set(citations))
     }
 
-async def guide_tier(client: httpx.AsyncClient, generic_name: str, profile: UserProfile, prescribed_meds: List[str]) -> List[Dict[str, Any]]:
+async def guide_tier(client: httpx.AsyncClient, generic_name: str, profile: UserProfile, prescribed_meds: list[str]) -> list[dict[str, Any]]:
     """Tier 3: Guide - Risk alerts."""
     alerts = []
     if not generic_name:
@@ -165,7 +167,7 @@ async def guide_tier(client: httpx.AsyncClient, generic_name: str, profile: User
                     
     return alerts
 
-async def process_safety(client: httpx.AsyncClient, extracted_meds: List[Dict[str, Any]], profile: Optional[UserProfile] = None) -> List[Dict[str, Any]]:
+async def process_safety(client: httpx.AsyncClient, extracted_meds: list[dict[str, Any]], profile: UserProfile | None = None) -> list[dict[str, Any]]:
     if not profile:
         profile = UserProfile()
         

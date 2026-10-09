@@ -1,19 +1,19 @@
-from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Tuple
 import os
-import io
+from abc import ABC, abstractmethod
+from typing import Any
+
 import cv2
 import numpy as np
 
+
 class OCREngine(ABC):
     @abstractmethod
-    def extract_text(self, image_bytes: bytes) -> Tuple[List[Dict[str, Any]], float]:
+    def extract_text(self, image_bytes: bytes) -> tuple[list[dict[str, Any]], float]:
         """
         Extracts text from image bytes.
         Returns a tuple: (list of line objects, overall confidence).
         Line object format: {"text": str, "bbox": [[x,y], ...], "confidence": float}
         """
-        pass
 
 class EasyOCREngine(OCREngine):
     def __init__(self):
@@ -21,7 +21,7 @@ class EasyOCREngine(OCREngine):
         # Use English by default, run on CPU if GPU is not available
         self.reader = easyocr.Reader(['en'], gpu=False)
 
-    def extract_text(self, image_bytes: bytes) -> Tuple[List[Dict[str, Any]], float]:
+    def extract_text(self, image_bytes: bytes) -> tuple[list[dict[str, Any]], float]:
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
@@ -43,6 +43,9 @@ class EasyOCREngine(OCREngine):
         overall_conf = sum(confidences) / len(confidences) if confidences else 0.0
         return lines, overall_conf
 
+class VisionAPIError(Exception):
+    pass
+
 class GoogleVisionEngine(OCREngine):
     def __init__(self):
         try:
@@ -51,7 +54,7 @@ class GoogleVisionEngine(OCREngine):
         except ImportError:
             self.client = None
 
-    def extract_text(self, image_bytes: bytes) -> Tuple[List[Dict[str, Any]], float]:
+    def extract_text(self, image_bytes: bytes) -> tuple[list[dict[str, Any]], float]:
         if not self.client:
             raise RuntimeError("google-cloud-vision is not installed.")
         from google.cloud import vision
@@ -60,7 +63,7 @@ class GoogleVisionEngine(OCREngine):
         response = self.client.document_text_detection(image=image)
         
         if response.error.message:
-            raise Exception(f"Google Vision API Error: {response.error.message}")
+            raise VisionAPIError(f"Google Vision API Error: {response.error.message}")
             
         lines = []
         confidences = []

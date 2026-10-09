@@ -1,7 +1,8 @@
 import re
-from typing import Dict, Any, Optional
+from typing import Any
 
-def parse_dosage(raw_text: str) -> Dict[str, Any]:
+
+def parse_dosage(raw_text: str) -> dict[str, Any]:
     text = raw_text.strip().upper()
     # Normalize dashes and spaces
     text = re.sub(r'\s*[-\u2010-\u2015]\s*', '-', text)

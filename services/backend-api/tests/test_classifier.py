@@ -1,6 +1,7 @@
+
 import pytest
-import asyncio
-from app.safety.classifier import explain_tier, UserProfile, guide_tier
+from app.safety.classifier import UserProfile, explain_tier, guide_tier
+
 
 def test_explain_tier():
     dosage = {
